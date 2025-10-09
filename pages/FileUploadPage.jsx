@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { UploadIcon, CopyIcon, BackIcon } from '../components/icons.jsx';
+import { UploadIcon, CopyIcon, BackIcon, DownloadIcon } from '../components/icons.jsx';
 
 const FileUploadPage = ({ navigateTo }) => {
   const [files, setFiles] = useState([]);
@@ -37,7 +37,7 @@ const FileUploadPage = ({ navigateTo }) => {
       });
 
       // Upload files to backend
-      const response = await fetch('http://localhost:5003/api/upload', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData
       });
@@ -115,7 +115,7 @@ const FileUploadPage = ({ navigateTo }) => {
             <p className="font-semibold text-lg">
               {files.length > 0 ? `${files.length} file(s) selected` : "Click to select or drag & drop"}
             </p>
-            <p className="text-sm text-gray-500">Any file type up to 100MB each (simulated)</p>
+            <p className="text-sm text-gray-500">Any file type up to 500MB each</p>
           </label>
         </div>
       )}
@@ -179,16 +179,23 @@ const FileUploadPage = ({ navigateTo }) => {
                     <CopyIcon className="w-5 h-5" />
                   </button>
                   <a 
+                    href={result.shareableLink.replace('/files/', '/download/')} 
+                    download={result.fileName}
+                    className="flex items-center justify-center p-2 bg-accent-cyan text-dark-bg rounded-md hover:bg-cyan-500 transition-colors"
+                    title="Download file"
+                  >
+                    <DownloadIcon className="w-4 h-4" />
+                  </a>
+                  <a 
                     href={result.shareableLink} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 px-3 py-2 bg-green-500 text-dark-bg rounded-md hover:bg-green-600 transition-colors"
+                    className="flex items-center justify-center p-2 bg-green-500 text-dark-bg rounded-md hover:bg-green-600 transition-colors"
                     title="Open file"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
-                    <span className="text-sm">Open</span>
                   </a>
                 </div>
               </div>
@@ -211,20 +218,6 @@ const FileUploadPage = ({ navigateTo }) => {
               <BackIcon className="w-5 h-5" />
               <span>Back to Home</span>
             </button>
-          </div>
-          
-          <div className="mt-6 text-center text-sm text-gray-400">
-            <p>If the links above don't work, you can also download files directly:</p>
-            {uploadResults.map((result, index) => (
-              <div key={`direct-${result.fileId}`} className="mt-1">
-                <a 
-                  href={result.shareableLink.replace('/files/', '/download/')} 
-                  className="text-accent-cyan hover:underline"
-                >
-                  Direct Download: {result.fileName}
-                </a>
-              </div>
-            ))}
           </div>
         </div>
       )}
