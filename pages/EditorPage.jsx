@@ -1,25 +1,39 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import CodeEditor from '../components/CodeEditor.jsx';
-import { ShareIcon, DownloadIcon, CopyIcon, PlusIcon, SettingsIcon } from '../components/icons.jsx';
+import { ShareIcon, DownloadIcon, CopyIcon, PlusIcon, SettingsIcon, UserIcon } from '../components/icons.jsx';
 import SettingsPanel from '../components/SettingsPanel.jsx';
 
 const EditorPage = ({ roomId }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [toolbarOpen, setToolbarOpen] = useState(false); // State for toolbar visibility
+  const [collaboratorsOpen, setCollaboratorsOpen] = useState(false); // New state for collaborators panel
   const [settings, setSettings] = useState({
     syntax: 'javascript',
     tabSize: 2,
     theme: 'monokai',
     keymap: 'sublime',
-    fontFamily: 'Fira Code',
+    fontFamily: 'Times New Roman',
     fontSize: 13,
     lineHeight: 1.4,
-    wordWrap: false,
+    wordWrap: true,
     showLineNumbers: true,
     softTabs: true,
     autoSave: false,
     autoSaveInterval: 5,
+    minimap: false,
+    highlightActiveLine: true,
+    showInvisibles: false,
+    scrollPastEnd: false,
+    editorWidth: 'full',
+    indentGuides: 'none',
   });
   const [copySuccess, setCopySuccess] = useState('');
+  // Mock collaborators data
+  const [collaborators] = useState([
+    { id: 1, name: 'Alex Johnson', color: '#06b6d4', active: true },
+    { id: 2, name: 'Sam Wilson', color: '#7c3aed', active: true },
+    { id: 3, name: 'Taylor Kim', color: '#16a34a', active: false },
+  ]);
   // simple in-memory files: id, name, content
   const [files, setFiles] = useState(() => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -69,6 +83,15 @@ const EditorPage = ({ roomId }) => {
     return () => clearInterval(interval);
   }, [settings.autoSave, settings.autoSaveInterval, files]);
 
+  // Toggle toolbar when settings icon is clicked
+  const toggleToolbar = () => {
+    setToolbarOpen(!toolbarOpen);
+    // Close settings panel when toolbar is closed
+    if (toolbarOpen && settingsOpen) {
+      setSettingsOpen(false);
+    }
+  };
+
   return (
     <>
     <div className="flex flex-col md:flex-row h-[calc(100vh-120px)] gap-4">
@@ -103,37 +126,98 @@ const EditorPage = ({ roomId }) => {
             lineHeight={settings.lineHeight}
             wordWrap={settings.wordWrap}
             showLineNumbers={settings.showLineNumbers}
+            minimap={settings.minimap}
+            highlightActiveLine={settings.highlightActiveLine}
+            showInvisibles={settings.showInvisibles}
+            scrollPastEnd={settings.scrollPastEnd}
+            editorWidth={settings.editorWidth}
+            indentGuides={settings.indentGuides}
           />
         </div>
       </div>
       {/* Right-side compact toolbar */}
 
       <aside className="w-12 flex-shrink-0 flex flex-col items-center gap-2">
-  <SettingsPanel visible={settingsOpen} settings={settings} onClose={() => setSettingsOpen(false)} onChange={(k, v) => setSettings(s => ({ ...s, [k]: v }))} />
-        <div className="p-2">
-          <button onClick={() => setSettingsOpen(true)} title="Settings" className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/5">
-            <SettingsIcon className="w-5 h-5" />
-          </button>
-        </div>
+        {/* Collaborators Panel */}
+        {collaboratorsOpen && (
+          <div className="fixed right-12 top-0 h-full w-80 bg-dark-bg/90 backdrop-blur-sm border-l border-glass-border p-4 z-50 overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Collaborators</h2>
+              <button onClick={() => setCollaboratorsOpen(false)} className="text-gray-400">✕</button>
+            </div>
+            <div className="space-y-3">
+              {collaborators.map(collaborator => (
+                <div key={collaborator.id} className="flex items-center gap-3 p-2 rounded bg-gray-800/50">
+                  <div 
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold"
+                    style={{ backgroundColor: collaborator.color, color: '#0f172a' }}
+                  >
+                    {collaborator.name.charAt(0)}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium">{collaborator.name}</div>
+                    <div className="text-xs text-gray-400">
+                      {collaborator.active ? 'Active now' : 'Offline'}
+                    </div>
+                  </div>
+                  <div className={`w-3 h-3 rounded-full ${collaborator.active ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         
-        <div className="p-2">
-          <button onClick={handleCopyLink} title="Share" className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/5">
-            <ShareIcon className="w-5 h-5" />
-          </button>
-        </div>
-        <div className="p-2">
-          <button onClick={handleDownload} title="Download" className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/5">
-            <DownloadIcon className="w-5 h-5" />
-          </button>
-        </div>
-        <div className="p-2 mt-2">
-          <button onClick={createNewFile} title="New file" className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/5">
-            <PlusIcon className="w-5 h-5" />
-          </button>
+        <SettingsPanel visible={settingsOpen} settings={settings} onClose={() => setSettingsOpen(false)} onChange={(k, v) => setSettings(s => ({ ...s, [k]: v }))} />
+        
+        {/* Horizontal toolbar - shows other icons to the left when open */}
+        <div className="flex flex-row-reverse items-center">
+          {/* Settings button - toggles the toolbar */}
+          <div className="p-2">
+            <button 
+              onClick={toggleToolbar} 
+              title="Settings" 
+              className={`w-10 h-10 rounded-md flex items-center justify-center ${toolbarOpen ? 'bg-white/10' : 'hover:bg-white/5'}`}
+            >
+              <SettingsIcon className="w-5 h-5" />
+            </button>
+          </div>
+          
+          {/* Other icons - shown to the left of settings when toolbar is open */}
+          {toolbarOpen && (
+            <>
+              <div className="p-2">
+                <button onClick={createNewFile} title="New file" className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/5">
+                  <PlusIcon className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="p-2">
+                <button onClick={handleDownload} title="Download" className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/5">
+                  <DownloadIcon className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="p-2">
+                <button onClick={() => setCollaboratorsOpen(true)} title="Collaborators" className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/5">
+                  <UserIcon className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="p-2 relative">
+                <button onClick={handleCopyLink} title="Share" className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/5">
+                  <ShareIcon className="w-5 h-5" />
+                </button>
+                {copySuccess && (
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-xs text-green-400 rounded whitespace-nowrap z-50">
+                    {copySuccess}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </aside>
     </div>
-      {/* collaborators reopen button intentionally removed to match requested layout */}
     </>
   );
 };

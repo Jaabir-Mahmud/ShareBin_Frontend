@@ -22,6 +22,13 @@ const Header = ({ navigateTo }) => {
   const now = new Date();
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+  // Split time string into individual characters with spacing
+  const renderSpacedTime = (timeString) => {
+    return timeString.split('').map((char, index) => (
+      <span key={index} className="mx-1">{char}</span>
+    ));
+  };
+
   return (
   <header style={{ WebkitBackdropFilter: 'blur(6px)' }} className="bg-dark-bg/50 backdrop-blur-sm sticky top-0 z-50 border-b border-glass-border">
   <nav className="w-full px-6 py-2 flex justify-between items-center">
@@ -30,13 +37,15 @@ const Header = ({ navigateTo }) => {
           onClick={() => navigateTo('home')}
           aria-label="Go to home"
         >
-          <span className="text-accent-cyan">Share</span>
-          <span className="text-accent-purple">Bin</span>
+          <span style={{ color: '#91C4C3' }}>Share</span>
+          <span style={{ color: '#B4DEBD' }}>Bin</span>
         </div>
         <div className="flex items-center gap-4 text-sm text-gray-300">
           <div className="flex items-center gap-2 text-gray-400">
-            <ClockIcon className="w-4 h-4 text-accent-cyan" />
-            <span className="font-medium text-accent-cyan tracking-wider">{timeStr}</span>
+            <ClockIcon className="w-4 h-4" style={{ color: '#91C4C3' }} />
+            <span className="font-medium tracking-wider flex" style={{ color: '#91C4C3' }}>
+              {renderSpacedTime(timeStr)}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             {/* removed the Share button per request for a cleaner header */}
