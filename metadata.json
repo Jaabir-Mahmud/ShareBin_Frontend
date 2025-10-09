@@ -1,0 +1,5 @@
+{
+  "name": "ShareBin",
+  "description": "A real-time collaborative web app for sharing code, text, and files. Features a dark minimal interface optimized for developers and university projects.",
+  "requestFramePermissions": []
+}
