@@ -5,7 +5,6 @@ import SettingsPanel from '../components/SettingsPanel.jsx';
 
 const EditorPage = ({ roomId }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [toolbarOpen, setToolbarOpen] = useState(false); // State for toolbar visibility
   const [collaboratorsOpen, setCollaboratorsOpen] = useState(false); // New state for collaborators panel
   const [settings, setSettings] = useState({
     syntax: 'javascript',
@@ -82,15 +81,6 @@ const EditorPage = ({ roomId }) => {
     }, (settings.autoSaveInterval || 5) * 1000);
     return () => clearInterval(interval);
   }, [settings.autoSave, settings.autoSaveInterval, files]);
-
-  // Toggle toolbar when settings icon is clicked
-  const toggleToolbar = () => {
-    setToolbarOpen(!toolbarOpen);
-    // Close settings panel when toolbar is closed
-    if (toolbarOpen && settingsOpen) {
-      setSettingsOpen(false);
-    }
-  };
 
   return (
     <>
@@ -169,52 +159,39 @@ const EditorPage = ({ roomId }) => {
         
         <SettingsPanel visible={settingsOpen} settings={settings} onClose={() => setSettingsOpen(false)} onChange={(k, v) => setSettings(s => ({ ...s, [k]: v }))} />
         
-        {/* Horizontal toolbar - shows other icons to the left when open */}
-        <div className="flex flex-row-reverse items-center">
-          {/* Settings button - toggles the toolbar */}
-          <div className="p-2">
-            <button 
-              onClick={toggleToolbar} 
-              title="Settings" 
-              className={`w-10 h-10 rounded-md flex items-center justify-center ${toolbarOpen ? 'bg-white/10' : 'hover:bg-white/5'}`}
-            >
-              <SettingsIcon className="w-5 h-5" />
-            </button>
-          </div>
-          
-          {/* Other icons - shown to the left of settings when toolbar is open */}
-          {toolbarOpen && (
-            <>
-              <div className="p-2">
-                <button onClick={createNewFile} title="New file" className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/5">
-                  <PlusIcon className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div className="p-2">
-                <button onClick={handleDownload} title="Download" className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/5">
-                  <DownloadIcon className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div className="p-2">
-                <button onClick={() => setCollaboratorsOpen(true)} title="Collaborators" className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/5">
-                  <UserIcon className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div className="p-2 relative">
-                <button onClick={handleCopyLink} title="Share" className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/5">
-                  <ShareIcon className="w-5 h-5" />
-                </button>
-                {copySuccess && (
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-xs text-green-400 rounded whitespace-nowrap z-50">
-                    {copySuccess}
-                  </div>
-                )}
-              </div>
-            </>
+        <div className="p-2">
+          <button onClick={() => setSettingsOpen(true)} title="Settings" className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/5">
+            <SettingsIcon className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <div className="p-2 relative">
+          <button onClick={handleCopyLink} title="Share" className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/5">
+            <ShareIcon className="w-5 h-5" />
+          </button>
+          {copySuccess && (
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-xs text-green-400 rounded whitespace-nowrap z-50">
+              {copySuccess}
+            </div>
           )}
+        </div>
+        
+        <div className="p-2">
+          <button onClick={() => setCollaboratorsOpen(true)} title="Collaborators" className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/5">
+            <UserIcon className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <div className="p-2">
+          <button onClick={handleDownload} title="Download" className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/5">
+            <DownloadIcon className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <div className="p-2 mt-2">
+          <button onClick={createNewFile} title="New file" className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/5">
+            <PlusIcon className="w-5 h-5" />
+          </button>
         </div>
       </aside>
     </div>

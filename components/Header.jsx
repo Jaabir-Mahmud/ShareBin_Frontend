@@ -1,11 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ClockIcon } from './icons.jsx';
-// settings moved to editor right toolbar
+import authService from '../services/authService';
 
 const Header = ({ navigateTo }) => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
-  const userInitials = 'YZ';
+  const [user, setUser] = useState(null);
+  const [userInitials, setUserInitials] = useState('YZ');
+
+  useEffect(() => {
+    // Check if user is authenticated and get user data
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) {
+      setUser(currentUser);
+      setUserInitials(currentUser.username?.charAt(0)?.toUpperCase() || 'U');
+    }
+  }, []);
 
   const palette = [
     ['#06b6d4', '#7c3aed'], // cyan -> purple
@@ -27,6 +36,14 @@ const Header = ({ navigateTo }) => {
     return timeString.split('').map((char, index) => (
       <span key={index} className="mx-1">{char}</span>
     ));
+  };
+
+  const handleLogout = () => {
+    authService.logout();
+    setUser(null);
+    setUserInitials('YZ');
+    setMenuOpen(false);
+    navigateTo('home');
   };
 
   return (
@@ -53,7 +70,7 @@ const Header = ({ navigateTo }) => {
             {/* settings moved to the right-side toolbar in the editor page */}
 
             <div className="relative" tabIndex={0} onBlur={() => setMenuOpen(false)}>
-              {loggedIn ? (
+              {authService.isAuthenticated() && user ? (
                 <div className="group">
                   <button
                     onClick={() => setMenuOpen((s) => !s)}
@@ -70,7 +87,7 @@ const Header = ({ navigateTo }) => {
 
                   {menuOpen && (
                     <div className="absolute right-0 mt-2 w-44 bg-dark-bg border border-gray-700 rounded shadow-lg p-2 z-50">
-                      <div className="px-2 py-1 text-xs text-gray-400">Signed in as {userInitials}</div>
+                      <div className="px-2 py-1 text-xs text-gray-400">Signed in as {user.username || user.email}</div>
                       <button
                         onClick={() => { setMenuOpen(false); navigateTo('profile'); }}
                         className="w-full text-left px-2 py-1 text-sm hover:bg-gray-800 rounded"
@@ -78,7 +95,7 @@ const Header = ({ navigateTo }) => {
                         Profile
                       </button>
                       <button
-                        onClick={() => { setLoggedIn(false); setMenuOpen(false); }}
+                        onClick={handleLogout}
                         className="w-full text-left px-2 py-1 text-sm hover:bg-gray-800 rounded"
                       >
                         Sign out
@@ -88,7 +105,7 @@ const Header = ({ navigateTo }) => {
                 </div>
               ) : (
                 <div>
-                  <button onClick={() => navigateTo('profile')} className="px-3 py-1 rounded-md border border-gray-700 text-sm hover:bg-white/5">Login</button>
+                  <button onClick={() => navigateTo('login')} className="px-3 py-1 rounded-md border border-gray-700 text-sm hover:bg-white/5">Login</button>
                 </div>
               )}
             </div>

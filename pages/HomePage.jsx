@@ -1,5 +1,6 @@
 import React from 'react';
 import GlowingButton from '../components/GlowingButton.jsx';
+import authService from '../services/authService';
 
 const FeatureCard = ({ title, description, icon }) => (
     <div className="glassmorphism p-6 rounded-lg text-center transform hover:-translate-y-2 transition-transform duration-300">
