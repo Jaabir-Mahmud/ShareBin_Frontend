@@ -1,5 +1,7 @@
 // AuthService.js
-const API_BASE_URL = '/api';
+const API_BASE_URL = import.meta.env.PROD 
+  ? ''  // Empty string for Vercel - relative paths work with Vercel routing
+  : '/api';
 
 class AuthService {
   // Register a new user

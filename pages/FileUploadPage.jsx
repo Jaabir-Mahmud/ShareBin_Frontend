@@ -36,8 +36,11 @@ const FileUploadPage = ({ navigateTo }) => {
         formData.append('files', file);
       });
 
+      // Use relative URL for both development and production with Vercel
+      const apiUrl = '/api/upload';
+
       // Upload files to backend
-      const response = await fetch('/api/upload', {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         body: formData
       });
