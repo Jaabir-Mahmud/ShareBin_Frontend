@@ -30,22 +30,36 @@ const FileUploadPage = ({ navigateTo }) => {
     setUploadResults([]);
 
     try {
+      console.log('Starting file upload process');
+      console.log('Number of files to upload:', files.length);
+      
       // Create FormData for multiple file upload
       const formData = new FormData();
       files.forEach((file) => {
         formData.append('files', file);
+        console.log('Adding file to form data:', file.name, file.size);
       });
 
-      // Use relative URL for both development and production with Vercel
-      const apiUrl = '/api/upload';
+      // Use the Render.com backend URL for API calls
+      const apiUrl = 'https://sharebin-jb7r.onrender.com/api/upload';
+      console.log('Uploading to:', apiUrl);
 
-      // Upload files to backend
+      // Upload files to backend with increased timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds timeout
+      
       const response = await fetch(apiUrl, {
         method: 'POST',
-        body: formData
+        body: formData,
+        signal: controller.signal
       });
-
+      
+      clearTimeout(timeoutId);
+      
+      console.log('Upload response status:', response.status);
+      
       const data = await response.json();
+      console.log('Upload response data:', data);
 
       if (!response.ok) {
         throw new Error(data.message || 'Upload failed');
@@ -56,7 +70,12 @@ const FileUploadPage = ({ navigateTo }) => {
       setIsUploading(false);
       setProgress(100);
     } catch (error) {
-      setUploadError('Failed to upload files. Please try again.');
+      console.error('Upload error:', error);
+      if (error.name === 'AbortError') {
+        setUploadError('Upload timed out. Please try again with smaller files.');
+      } else {
+        setUploadError(`Failed to upload files: ${error.message}. Please try again.`);
+      }
       setIsUploading(false);
       setProgress(0);
     }
@@ -118,14 +137,15 @@ const FileUploadPage = ({ navigateTo }) => {
             <p className="font-semibold text-lg">
               {files.length > 0 ? `${files.length} file(s) selected` : "Click to select or drag & drop"}
             </p>
-            <p className="text-sm text-gray-500">Any file type up to 500MB each</p>
+            <p className="text-sm text-gray-500">Any file type up to 500MB each (uploads may take a while for large files)</p>
           </label>
         </div>
       )}
 
       {uploadError && (
         <div className="mt-4 p-3 bg-red-500/20 border border-red-500 rounded-md text-red-300">
-          {uploadError}
+          <p>{uploadError}</p>
+          <p className="text-sm mt-2">If this error persists, please check the browser console for more details.</p>
         </div>
       )}
 
