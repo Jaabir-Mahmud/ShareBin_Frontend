@@ -1,104 +1,96 @@
-// AuthService.js
-const API_BASE_URL = import.meta.env.PROD 
-  ? ''  // Empty string for Vercel - relative paths work with Vercel routing
-  : '/api';
+// AuthService.js - Fully functional Firebase authentication service
+import { auth, googleProvider } from './firebaseConfig';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInWithPopup, 
+  signOut, 
+  onAuthStateChanged as firebaseOnAuthStateChanged 
+} from "firebase/auth";
 
 class AuthService {
-  // Register a new user
-  async register(username, email, password) {
-    const response = await fetch(`${API_BASE_URL}/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, email, password }),
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Registration failed');
-    }
-
-    // Store token in localStorage
-    if (data.token) {
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-    }
-
-    return data;
+  constructor() {
+    this.user = null;
+    this.token = null;
+    this.listeners = [];
   }
 
-  // Login user
+  // Add listener for auth state changes
+  onAuthStateChanged(callback) {
+    // Call the Firebase onAuthStateChanged method
+    const unsubscribe = firebaseOnAuthStateChanged(auth, (user) => {
+      this.user = user;
+      callback(user);
+    });
+    
+    // Return unsubscribe function
+    return unsubscribe;
+  }
+
+  // Email/password login
   async login(email, password) {
-    const response = await fetch(`${API_BASE_URL}/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Login failed');
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      this.user = userCredential.user;
+      return userCredential;
+    } catch (error) {
+      throw error;
     }
-
-    // Store token in localStorage
-    if (data.token) {
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-    }
-
-    return data;
   }
 
-  // Logout user
-  logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  // Email/password registration
+  async register(username, email, password) {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      this.user = userCredential.user;
+      
+      // Note: Firebase doesn't directly support username during registration
+      // You might want to store the username in a separate database
+      return userCredential;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Google login
+  async googleLogin() {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      this.user = result.user;
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Logout
+  async logout() {
+    try {
+      await signOut(auth);
+      this.user = null;
+      this.token = null;
+      return Promise.resolve();
+    } catch (error) {
+      throw error;
+    }
   }
 
   // Get current user
   getCurrentUser() {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+    return this.user;
   }
 
   // Get token
-  getToken() {
-    return localStorage.getItem('token');
+  async getToken() {
+    if (this.user) {
+      return await this.user.getIdToken();
+    }
+    return null;
   }
 
   // Check if user is authenticated
   isAuthenticated() {
-    const token = this.getToken();
-    return !!token;
-  }
-
-  // Get user profile
-  async getProfile() {
-    const token = this.getToken();
-    
-    if (!token) {
-      throw new Error('No token found');
-    }
-
-    const response = await fetch(`${API_BASE_URL}/profile`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to fetch profile');
-    }
-
-    return data;
+    return !!this.user;
   }
 }
 

@@ -6,15 +6,34 @@ const Header = ({ navigateTo }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [userInitials, setUserInitials] = useState('YZ');
+  const [loggingOut, setLoggingOut] = useState(false);
 
+  // Listen for auth state changes
   useEffect(() => {
-    // Check if user is authenticated and get user data
-    const currentUser = authService.getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-      setUserInitials(currentUser.username?.charAt(0)?.toUpperCase() || 'U');
-    }
-  }, []);
+    console.log('Header: Setting up auth state listener');
+    const unsubscribe = authService.onAuthStateChanged((user) => {
+      console.log('Header: Auth state changed, user:', user ? 'exists' : 'null');
+      console.log('Header: Current authService user:', authService.user ? 'exists' : 'null');
+      
+      if (user) {
+        setUser(user);
+        // Fix: Get initials from displayName or email properly
+        const displayName = user.displayName || user.email;
+        const initials = displayName ? displayName.charAt(0).toUpperCase() : 'U';
+        setUserInitials(initials);
+        console.log('Header: User set to:', user.email, 'initials:', initials);
+      } else {
+        setUser(null);
+        setUserInitials('YZ');
+        console.log('Header: User set to null');
+      }
+    });
+    
+    return () => {
+      console.log('Header: Cleaning up auth state listener');
+      unsubscribe();
+    };
+  }, []); // This should be fine as a one-time setup
 
   const palette = [
     ['#06b6d4', '#7c3aed'], // cyan -> purple
@@ -28,6 +47,7 @@ const Header = ({ navigateTo }) => {
     const pair = palette[sum % palette.length];
     return `linear-gradient(135deg, ${pair[0]}, ${pair[1]})`;
   };
+  
   const now = new Date();
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -38,12 +58,16 @@ const Header = ({ navigateTo }) => {
     ));
   };
 
-  const handleLogout = () => {
-    authService.logout();
-    setUser(null);
-    setUserInitials('YZ');
-    setMenuOpen(false);
-    navigateTo('home');
+  const handleLogout = async () => {
+    try {
+      setLoggingOut(true);
+      await authService.logout();
+      navigateTo('home');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   return (
@@ -64,55 +88,55 @@ const Header = ({ navigateTo }) => {
               {renderSpacedTime(timeStr)}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            {/* removed the Share button per request for a cleaner header */}
-
-            {/* settings moved to the right-side toolbar in the editor page */}
-
-            <div className="relative" tabIndex={0} onBlur={() => setMenuOpen(false)}>
-              {authService.isAuthenticated() && user ? (
-                <div className="group">
-                  <button
-                    onClick={() => setMenuOpen((s) => !s)}
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm ring-1 ring-gray-700 focus:outline-none"
-                    aria-haspopup="true"
-                    aria-expanded={menuOpen}
-                    title="Account"
-                    style={{ background: getAvatarGradient(userInitials), color: '#0f172a' }}
-                  >
-                    <span className="font-semibold">{userInitials}</span>
-                  </button>
-
-                  <div className="absolute -top-8 right-0 hidden group-hover:block px-2 py-1 rounded bg-gray-800 text-xs text-gray-300">Account</div>
-
-                  {menuOpen && (
-                    <div className="absolute right-0 mt-2 w-44 bg-dark-bg border border-gray-700 rounded shadow-lg p-2 z-50">
-                      <div className="px-2 py-1 text-xs text-gray-400">Signed in as {user.username || user.email}</div>
-                      <button
-                        onClick={() => { setMenuOpen(false); navigateTo('profile'); }}
-                        className="w-full text-left px-2 py-1 text-sm hover:bg-gray-800 rounded"
-                      >
-                        Profile
-                      </button>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full text-left px-2 py-1 text-sm hover:bg-gray-800 rounded"
-                      >
-                        Sign out
-                      </button>
-                    </div>
-                  )}
-                </div>
+          
+          {/* Show either login button or user profile based on auth state */}
+          {user ? (
+            <div className="relative group">
+              {/* Display user profile photo or initials */}
+              {user.photoURL ? (
+                <img 
+                  src={user.photoURL} 
+                  alt="Profile" 
+                  className="w-8 h-8 rounded-full object-cover cursor-pointer"
+                />
               ) : (
-                <div>
-                  <button onClick={() => navigateTo('login')} className="px-3 py-1 rounded-md border border-gray-700 text-sm hover:bg-white/5">Login</button>
+                <div 
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white font-medium cursor-pointer"
+                  style={{ background: getAvatarGradient(user.email || 'user') }}
+                >
+                  {userInitials}
                 </div>
               )}
+              <div className="absolute right-0 mt-2 w-48 bg-dark-bg border border-glass-border rounded-lg shadow-lg py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="px-4 py-2 text-sm border-b border-glass-border">
+                  <div className="font-medium">{user.displayName || user.email}</div>
+                  {user.email && <div className="text-gray-400 text-xs">{user.email}</div>}
+                </div>
+                <button
+                  onClick={() => navigateTo('profile')}
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-700 transition-colors"
+                >
+                  Profile
+                </button>
+                <button
+                  onClick={handleLogout}
+                  disabled={loggingOut}
+                  className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 transition-colors disabled:opacity-50"
+                >
+                  {loggingOut ? 'Logging out...' : 'Logout'}
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <button
+              onClick={() => navigateTo('login')}
+              className="px-4 py-2 bg-accent-cyan text-dark-bg rounded font-medium hover:bg-cyan-400 transition-colors"
+            >
+              Login
+            </button>
+          )}
         </div>
       </nav>
-    {/* SettingsPanel is now handled in the EditorPage right toolbar */}
     </header>
   );
 };

@@ -41,7 +41,6 @@ export default ShareBin;
   </div>
 );
 
-
 const HomePage = ({ navigateTo }) => {
   return (
     <div className="text-center">

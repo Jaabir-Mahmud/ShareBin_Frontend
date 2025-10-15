@@ -151,7 +151,7 @@ const FileUploadPage = ({ navigateTo }) => {
               </button>
               <button
                 onClick={() => navigateTo && navigateTo('home')}
-                className="flex items-center justify-center gap-2 px-8 py-3 bg-accent-cyan text-dark-bg font-bold rounded-lg hover:bg-cyan-500 transition-all"
+                className="flex items-center justify-center gap-2 px-8 py-3 bg-accent-cyan text-dark-bg rounded-lg hover:bg-cyan-500 transition-all"
               >
                 <BackIcon className="w-5 h-5" />
                 <span>Back</span>
@@ -182,7 +182,7 @@ const FileUploadPage = ({ navigateTo }) => {
                     <CopyIcon className="w-5 h-5" />
                   </button>
                   <a 
-                    href={result.shareableLink.replace('/files/', '/download/')} 
+                    href={result.shareableLink} 
                     download={result.fileName}
                     className="flex items-center justify-center p-2 bg-accent-cyan text-dark-bg rounded-md hover:bg-cyan-500 transition-colors"
                     title="Download file"
@@ -200,6 +200,7 @@ const FileUploadPage = ({ navigateTo }) => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
                   </a>
+
                 </div>
               </div>
             ))}
