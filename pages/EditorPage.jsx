@@ -3,9 +3,9 @@ import CodeEditor from '../components/CodeEditor.jsx';
 import { ShareIcon, DownloadIcon, CopyIcon, PlusIcon, SettingsIcon, UserIcon } from '../components/icons.jsx';
 import SettingsPanel from '../components/SettingsPanel.jsx';
 
-const EditorPage = ({ roomId }) => {
+const EditorPage = ({ roomId, snippetId }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [collaboratorsOpen, setCollaboratorsOpen] = useState(false); // New state for collaborators panel
+  const [collaboratorsOpen, setCollaboratorsOpen] = useState(false);
   const [settings, setSettings] = useState({
     syntax: 'javascript',
     tabSize: 2,
@@ -27,26 +27,227 @@ const EditorPage = ({ roomId }) => {
     indentGuides: 'none',
   });
   const [copySuccess, setCopySuccess] = useState('');
-  // Mock collaborators data
   const [collaborators] = useState([
     { id: 1, name: 'Alex Johnson', color: '#06b6d4', active: true },
     { id: 2, name: 'Sam Wilson', color: '#7c3aed', active: true },
     { id: 3, name: 'Taylor Kim', color: '#16a34a', active: false },
   ]);
-  // simple in-memory files: id, name, content
   const [files, setFiles] = useState(() => {
     const id = Math.random().toString(36).substring(2, 9);
     return [{ id, name: 'untitled', content: `` }];
   });
   const [activeFileId, setActiveFileId] = useState(files[0].id);
+  const [snippetLoaded, setSnippetLoaded] = useState(false);
+  const [snippetInfo, setSnippetInfo] = useState(null);
+  const [editingMode, setEditingMode] = useState(false);
+
+  // Load snippet if snippetId is provided
+  useEffect(() => {
+    if (snippetId && !snippetLoaded) {
+      loadSnippet(snippetId);
+    }
+  }, [snippetId, snippetLoaded]);
+
+  const loadSnippet = async (id) => {
+    try {
+      // Call backend API to load snippet
+      const response = await fetch(`https://sharebin-jb7r.onrender.com/api/snippets/${id}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Snippet not found');
+        } else if (response.status === 410) {
+          throw new Error('Snippet has expired');
+        } else {
+          throw new Error('Failed to load snippet');
+        }
+      }
+      
+      const data = await response.json();
+      
+      // Set the loaded snippet content
+      setFiles([{ 
+        id: 'loaded-snippet', 
+        name: data.name || `snippet-${id}`, 
+        content: data.content || '' 
+      }]);
+      setActiveFileId('loaded-snippet');
+      setSnippetLoaded(true);
+      setSnippetInfo(data);
+      setEditingMode(data.editing || false);
+      
+      // Update syntax highlighting based on language if available
+      if (data.language) {
+        setSettings(s => ({ ...s, syntax: data.language }));
+      }
+    } catch (error) {
+      console.error('Error loading snippet:', error);
+      // Set some default content to indicate the error
+      setFiles([{ 
+        id: 'error-snippet', 
+        name: 'error-loading', 
+        content: `// Error loading snippet: ${error.message}\n// Please check the URL and try again.` 
+      }]);
+      setActiveFileId('error-snippet');
+    }
+  };
+
+  const saveSnippet = async (customId = null) => {
+    try {
+      const activeFile = files.find(f => f.id === activeFileId) || files[0];
+      
+      // Get JWT token from localStorage (assuming it's stored there after login)
+      const token = localStorage.getItem('sharebin_token');
+      
+      if (!token) {
+        setCopySuccess('Please log in to save snippets');
+        setTimeout(() => setCopySuccess(''), 3000);
+        return;
+      }
+      
+      // Call backend API to save snippet
+      const response = await fetch('https://sharebin-jb7r.onrender.com/api/snippets', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          content: activeFile.content, 
+          name: activeFile.name,
+          language: settings.syntax,
+          customId: customId, // Pass custom ID if provided
+          editing: editingMode // Pass current editing mode
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to save snippet');
+      }
+      
+      const data = await response.json();
+      
+      // Update the URL to reflect the new snippet
+      window.location.hash = `#/${data.snippetId}`;
+      
+      // Copy the shareable URL to clipboard
+      navigator.clipboard.writeText(data.url);
+      setCopySuccess('Snippet saved! Link copied to clipboard.');
+      
+      setTimeout(() => setCopySuccess(''), 3000);
+    } catch (error) {
+      console.error('Error saving snippet:', error);
+      setCopySuccess(`Error: ${error.message}`);
+      setTimeout(() => setCopySuccess(''), 3000);
+    }
+  };
+
+  const updateSnippet = async () => {
+    try {
+      if (!snippetId) return;
+      
+      const activeFile = files.find(f => f.id === activeFileId) || files[0];
+      
+      // Call backend API to update snippet
+      const response = await fetch(`https://sharebin-jb7r.onrender.com/api/snippets/${snippetId}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          content: activeFile.content, 
+          name: activeFile.name,
+          language: settings.syntax
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update snippet');
+      }
+      
+      const data = await response.json();
+      setSnippetInfo(data);
+      
+      setCopySuccess('Snippet updated successfully!');
+      setTimeout(() => setCopySuccess(''), 3000);
+    } catch (error) {
+      console.error('Error updating snippet:', error);
+      setCopySuccess(`Error: ${error.message}`);
+      setTimeout(() => setCopySuccess(''), 3000);
+    }
+  };
+
+  const toggleEditingMode = async () => {
+    try {
+      if (!snippetId) return;
+      
+      // Get JWT token from localStorage
+      const token = localStorage.getItem('sharebin_token');
+      
+      if (!token) {
+        setCopySuccess('Please log in to change editing mode');
+        setTimeout(() => setCopySuccess(''), 3000);
+        return;
+      }
+      
+      // Call backend API to toggle editing mode
+      const response = await fetch(`https://sharebin-jb7r.onrender.com/api/snippets/${snippetId}/editing`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          editing: !editingMode
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to toggle editing mode');
+      }
+      
+      const data = await response.json();
+      setEditingMode(data.editing);
+      
+      setCopySuccess(`Editing mode: ${data.editing ? 'ON' : 'OFF'}`);
+      setTimeout(() => setCopySuccess(''), 3000);
+    } catch (error) {
+      console.error('Error toggling editing mode:', error);
+      setCopySuccess(`Error: ${error.message}`);
+      setTimeout(() => setCopySuccess(''), 3000);
+    }
+  };
 
   const handleCodeChange = useCallback((newCode) => {
     setFiles((cur) => cur.map(f => f.id === activeFileId ? { ...f, content: newCode } : f));
-  }, [activeFileId]);
+    
+    // If we're viewing an existing snippet with editing enabled, auto-save changes
+    if (snippetId && editingMode) {
+      // Debounce the update to avoid too many requests
+      const timer = setTimeout(() => {
+        updateSnippet();
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [activeFileId, snippetId, editingMode]);
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(`${window.location.origin}#room/${roomId}`);
-    setCopySuccess('Link copied!');
+    if (snippetId) {
+      // If we're viewing an existing snippet, just copy the current URL
+      const url = `${window.location.origin}/${snippetId}`;
+      navigator.clipboard.writeText(url);
+      setCopySuccess('Link copied!');
+    } else {
+      // If we're creating a new snippet, save it first
+      const customId = prompt('Enter a custom ID (or leave blank for auto-generated):');
+      if (customId !== null) {
+        saveSnippet(customId);
+      }
+    }
     setTimeout(() => setCopySuccess(''), 2000);
   };
   
@@ -55,7 +256,7 @@ const EditorPage = ({ roomId }) => {
     const blob = new Blob([active.content], { type: 'text/plain;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `${active.name}`;
+    link.download = `${active.name}.txt`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -89,7 +290,22 @@ const EditorPage = ({ roomId }) => {
       <div className="flex-1 flex flex-col">
         <div className="flex justify-between items-center mb-2 p-2 glassmorphism rounded-t-lg">
           <div className="flex items-center gap-4">
-             {/* Room ID section removed as per user request */}
+            {snippetInfo && (
+              <div className="text-sm">
+                <span className="text-gray-400">Editing: </span>
+                <span className={editingMode ? "text-green-400" : "text-red-400"}>
+                  {editingMode ? "ON" : "OFF"}
+                </span>
+                {snippetInfo.owner_id && (
+                  <button 
+                    onClick={toggleEditingMode}
+                    className="ml-2 text-xs px-2 py-1 rounded bg-gray-700 hover:bg-gray-600"
+                  >
+                    Toggle
+                  </button>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {/* Top textual share/download removed to keep header minimal. Use right-side toolbar icons instead. */}

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShareBin Snippet Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #0D1117;
+            color: #E6EDF3;
+        }
+        .container {
+            background-color: #161B22;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #00FFFF;
+        }
+        code {
+            background-color: #21262D;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+        }
+        a {
+            color: #58A6FF;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .button {
+            background-color: #1F6FEB;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .button:hover {
+            background-color: #388BFF;
+        }
+        .snippet-url {
+            background-color: #21262D;
+            border: 1px solid #30363D;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 16px 0;
+            word-break: break-all;
+            font-family: 'Fira Code', monospace;
+        }
+        .steps {
+            counter-reset: step-counter;
+        }
+        .steps li {
+            margin-bottom: 16px;
+            position: relative;
+            padding-left: 32px;
+        }
+        .steps li:before {
+            counter-increment: step-counter;
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background-color: #1F6FEB;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ShareBin Snippet Feature</h1>
+        <p>ShareBin now supports creating and sharing code snippets with unique URLs. Anyone can access and add code using a unique ID at the end of the URL.</p>
+    </div>
+
+    <div class="container">
+        <h2>How to Create a Snippet</h2>
+        <ol class="steps">
+            <li>Visit <a href="https://sharebin-lake.vercel.app" target="_blank" rel="noopener">ShareBin</a> and write your code in the editor</li>
+            <li>Click the <strong>Share</strong> button (paper airplane icon) in the right toolbar</li>
+            <li>The snippet will be saved and a unique URL will be copied to your clipboard</li>
+            <li>Share this URL with anyone</li>
+        </ol>
+    </div>
+
+    <div class="container">
+        <h2>How to Access a Snippet</h2>
+        <ol class="steps">
+            <li>Navigate to a snippet URL like: <code>https://sharebin-lake.vercel.app/#/s/{unique-id}</code></li>
+            <li>The code snippet will be loaded automatically in the editor</li>
+            <li>You can edit, download, or share the snippet</li>
+        </ol>
+    </div>
+
+    <div class="container">
+        <h2>Example Snippet</h2>
+        <p>Try accessing this example snippet:</p>
+        <div class="snippet-url">
+            <a href="https://sharebin-lake.vercel.app/#/s/tuo5z01m" target="_blank" rel="noopener">
+                https://sharebin-lake.vercel.app/#/s/tuo5z01m
+            </a>
+        </div>
+        <p>This snippet contains a simple JavaScript example.</p>
+    </div>
+
+    <div class="container">
+        <h2>Technical Details</h2>
+        <p>The feature uses:</p>
+        <ul>
+            <li>Unique ID generation for each snippet</li>
+            <li>In-memory storage on the backend (for demo purposes)</li>
+            <li>REST API endpoints for saving and retrieving snippets</li>
+            <li>Frontend routing to handle snippet URLs</li>
+        </ul>
+        <p>For production use, the in-memory storage should be replaced with a persistent database.</p>
+    </div>
+</body>
+</html>
