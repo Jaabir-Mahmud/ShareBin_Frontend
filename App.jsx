@@ -34,6 +34,7 @@ const App = () => {
         if (path.startsWith('/')) {
           const id = path.substring(1);
           // Only treat as snippet if it's not one of our known routes
+          // We check for non-empty id and that it's not a reserved route
           if (id && !['login', 'profile', 'upload', 'editor', 'home'].includes(id)) {
             setSnippetId(id);
             setCurrentPage('editor');
@@ -79,10 +80,6 @@ const App = () => {
     
     // Listen for hash changes
     window.addEventListener('hashchange', handleRouteChange);
-    
-    // For path-based routing, we would need to handle this differently in a real app
-    // with a proper router like React Router, but for this implementation we'll
-    // just handle the initial load
     
     return () => {
       window.removeEventListener('hashchange', handleRouteChange);

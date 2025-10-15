@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ShareBin</title>
+    <script>
+      // Redirect to the main page with the current path as a hash
+      var path = window.location.pathname;
+      if (path.startsWith('/')) {
+        // Convert path-based routing to hash-based routing
+        window.location.href = '/' + '#' + path;
+      } else {
+        // Fallback to home page
+        window.location.href = '/';
+      }
+    </script>
+  </head>
+  <body>
+    <p>Redirecting...</p>
+  </body>
+</html>
